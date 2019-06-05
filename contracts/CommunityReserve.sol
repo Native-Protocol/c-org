@@ -2,11 +2,16 @@ pragma solidity ^0.4.24;
 
 contract CommunityReserve {
 
-    /* The parameters of the Community, based on a set magnitude */
-    uint base = 10000;
+    /*
+     * The parameters of the Community. 
+     *
+     * Solidity doesn't have floating point variable so we use a high magnitude
+     * to act as decimal places for more accurate division.
+     */
+    uint base = 10000; // the magnitude applied (10^4)
     uint slope = base; // parametrize the buying linear curve
     uint alpha = base/10; // 10% split into reserve when members/investors buy
-    uint beta = base/3; // 33% split into reserve when revenues are deposited
+    uint beta = base/10; // 33% split into reserve when revenues are deposited
 
     /* The tokens of the Community */
     address internal communityFund; // The owner of the contract
@@ -20,12 +25,10 @@ contract CommunityReserve {
     event UpdateTokens(uint tokensInCirculation);
     event WithdrawTokens(uint amount);
 
-    /* 
-     * Solidity doesn't have floating point decimals so we use a high magnitude
-     * base to act as decimal places for more accurate division.
-     */
+    /** Constructor */
     constructor(uint _base) public {
         communityFund = msg.sender;
+        // Use _base magnitude to set ratios
         slope = _base;
         alpha = _base/10;
         beta = _base/10;
