@@ -9,9 +9,11 @@ contract CommunityReserve {
     uint beta = base/3; // 33% split into reserve when revenues are deposited
 
     /* The tokens of the Community */
-    mapping(address => uint) internal balances;
     address internal communityFund; // The owner of the contract
     uint internal tokensInCirculation = 0;
+    mapping(address => uint) internal balances;
+    
+    // TODO: Isn't this balance literally what's held in the contract?
     uint internal reserveBalance = 0;
 
     /* Permission rights */
@@ -69,8 +71,8 @@ contract CommunityReserve {
         public
         view
         returns (uint y) {
-            require (tokensInCirculation > 0);
-            y = (reserveBalance / (2 * tokensInCirculation * slope / alpha));
+            require (tokensInCirculation > 0, "There's no curve to derive from");
+            y = reserveBalance * base / (2 * tokensInCirculation * slope / alpha);
     }
 
     /* Minting and burning tokens */
@@ -85,8 +87,9 @@ contract CommunityReserve {
         tokensInCirculation += tokenAmount;
 
         // Redistribute tokens
-        reserveBalance += alpha*investment;
-        communityFund.transfer((base-alpha)/base*investment);
+        reserveBalance += alpha*investment/base;
+        // Send remainder percentage `(base-alpha)/base` to fund.
+        communityFund.transfer((base-alpha)*investment/base);
 
         emit UpdateTokens(tokensInCirculation, reserveBalance);
     }
@@ -98,14 +101,13 @@ contract CommunityReserve {
 
         balances[msg.sender] -= tokenAmount;
         uint withdraw = reserveBalance*tokenAmount/tokensInCirculation/tokensInCirculation*(2*tokensInCirculation - tokenAmount);
-        reserveBalance -= withdraw;
         withdraw /= base;
+        reserveBalance -= withdraw;
         msg.sender.transfer(withdraw);
 
         emit UpdateTokens(tokensInCirculation, reserveBalance);
     }
 
-    // TODO: The balance update and transfer to the community fund smell fishy
     function pay()
         public
         payable {
@@ -119,9 +121,9 @@ contract CommunityReserve {
         tokensInCirculation += tokenAmount;
 
         // Redistribute tokens
-        reserveBalance += revenue;
-        // TODO: This seems to cause out of gas errors
-        communityFund.transfer((1-beta)*revenue/base);
+        reserveBalance += beta*revenue/base;
+        // Send remainder percentage `(base-beta)/base` to fund.
+        communityFund.transfer((base-beta)*revenue/base);
 
         emit UpdateTokens(tokensInCirculation, reserveBalance);
     }
