@@ -12,9 +12,6 @@ contract CommunityReserve {
     address internal communityFund; // The owner of the contract
     uint internal tokensInCirculation = 0;
     mapping(address => uint) internal balances;
-    
-    // TODO: Isn't this balance literally what's held in the contract?
-    uint internal reserveBalance = 0;
 
     /* Permission rights */
     modifier isOwner(address sender) { require(sender == communityFund); _; }
@@ -53,13 +50,13 @@ contract CommunityReserve {
         public
         view
         returns (uint y) {
-            y = reserveBalance;
+            y = address(this).balance;
     }
     function getFundBalance()
         public
         view
         returns (uint y) {
-            y = balances[communityFund];
+            y = address(communityFund).balance;
     }
     function getTokensInCirculation()
         public
@@ -71,8 +68,8 @@ contract CommunityReserve {
         public
         view
         returns (uint y) {
-            require (tokensInCirculation > 0, "There's no curve to derive from");
-            y = reserveBalance * base / (2 * tokensInCirculation * slope / alpha);
+            require(tokensInCirculation > 0, "There's no curve to derive from");
+            y = getReserveBalance() * base / (2 * tokensInCirculation * slope / alpha);
     }
 
     /* Minting and burning tokens */
@@ -86,12 +83,10 @@ contract CommunityReserve {
         balances[msg.sender] += tokenAmount;
         tokensInCirculation += tokenAmount;
 
-        // Redistribute tokens
-        reserveBalance += alpha*investment/base;
-        // Send remainder percentage `(base-alpha)/base` to fund.
+        // Send remainder percentage - (base-alpha)/base - to fund.
         communityFund.transfer((base-alpha)*investment/base);
 
-        emit UpdateTokens(tokensInCirculation, reserveBalance);
+        emit UpdateTokens(tokensInCirculation);
     }
 
     function sell(uint tokenAmount) public {
@@ -120,12 +115,10 @@ contract CommunityReserve {
         balances[communityFund] += tokenAmount;
         tokensInCirculation += tokenAmount;
 
-        // Redistribute tokens
-        reserveBalance += beta*revenue/base;
-        // Send remainder percentage `(base-beta)/base` to fund.
+        // Send remainder percentage - (base-beta)/base - to fund.
         communityFund.transfer((base-beta)*revenue/base);
 
-        emit UpdateTokens(tokensInCirculation, reserveBalance);
+        emit UpdateTokens(tokensInCirculation);
     }
 
     function mint(uint amount)
