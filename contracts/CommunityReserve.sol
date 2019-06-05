@@ -27,7 +27,7 @@ contract CommunityReserve {
         communityFund = msg.sender;
         slope = _base;
         alpha = _base/10;
-        beta = _base/3;
+        beta = _base/10;
     }
 
     /* Getters and setters */
