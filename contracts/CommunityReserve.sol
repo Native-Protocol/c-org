@@ -17,7 +17,8 @@ contract CommunityReserve {
     modifier isOwner(address sender) { require(sender == communityFund); _; }
 
     /* Events */
-    event UpdateTokens(uint tokensInCirculation, uint reserveBalance);
+    event UpdateTokens(uint tokensInCirculation);
+    event WithdrawTokens(uint amount);
 
     /* 
      * Solidity doesn't have floating point decimals so we use a high magnitude
@@ -95,12 +96,17 @@ contract CommunityReserve {
         require(balances[msg.sender] >= tokenAmount);
 
         balances[msg.sender] -= tokenAmount;
-        uint withdraw = reserveBalance*tokenAmount/tokensInCirculation/tokensInCirculation*(2*tokensInCirculation - tokenAmount);
-        withdraw /= base;
-        reserveBalance -= withdraw;
+        tokensInCirculation -= tokenAmount;
+
+        // TODO: This equation is returning an order of magnitude off and a
+        // seemingly incorrect amount. Am getting 162197 should be ~2027760
+        uint withdraw = getReserveBalance()*tokenAmount/tokensInCirculation/tokensInCirculation*(2*tokensInCirculation - tokenAmount);
+
+        // emit event for testing
+        emit WithdrawTokens(withdraw);
         msg.sender.transfer(withdraw);
 
-        emit UpdateTokens(tokensInCirculation, reserveBalance);
+        emit UpdateTokens(tokensInCirculation);
     }
 
     function pay()
